@@ -1,4 +1,4 @@
-function varargout = eval_gradient(net, condition, v_u_t, m_target_t, forward_pass)
+function varargout = eval_gradient(net, init_condition, v_u_t, m_target_t, forward_pass)
 %% Setup.
 % Network structure.
 [n_Wru_v, n_Wrr_n, m_Wzr_n, n_x0_c, n_bx_1, m_bz_1] = unpackRNN(net, net.theta);
@@ -12,7 +12,7 @@ rec_Doperator = net.layers(2).Doperator;
 rec_D2operator = net.layers(2).D2operator;
 
 % The initial state of the RNN.
-n_x0_1 = n_x0_c(:,condition);
+n_x0_1 = n_x0_c(:,init_condition);
 % dt_o_tau.
 dt_o_tau = net.dt / net.tau;
 % The magnitude of noise.
@@ -262,7 +262,7 @@ n_dLdWru_v = n_Wru_entry_mask_v .* (dt_o_tau * n_dLdx_t * v_u_t');
 n_dLdWrr_n = n_Wrr_entry_mask_n .* (dt_o_tau * n_dLdx_t * n_rm1_t');
 
 n_dLdx0_c = zeros(N,net.nics);
-n_dLdx0_c(:,condition) = n_x0_entry_mask_c(:,condition) .* n_dLdx0_1;
+n_dLdx0_c(:,init_condition) = n_x0_entry_mask_c(:,init_condition) .* n_dLdx0_1;
 
 if net.do_learn_biases
     n_dLdbx_1 = n_bx_entry_mask_1 .* (dt_o_tau * sum(n_dLdx_t, 2));
@@ -334,7 +334,7 @@ if do_check_grad && norm(grad) > 0.01 && rand < 0.1
     numergrad = zeros(size(theta));
     ngrads = size(theta(:),1);
     disp([num2str(ngrads) ' params in total.']);
-    objfun = @(net) eval_objfun(net, condition, v_u_t, m_target_t, []);
+    objfun = @(net) eval_objfun(net, init_condition, v_u_t, m_target_t, []);
 
     for i = 1:ngrads
         e_i = zeros(ngrads,1);

@@ -72,10 +72,10 @@ end
 do_parallel = true;
 nworkers = 7;
 if do_parallel
-    myCluster = parcluster('local');
-    if myCluster.NumWorkers < nworkers
-        myCluster.NumWorkers = nworkers;
-        saveProfile(myCluster);
+    mycluster = parcluster('local');
+    if mycluster.NumWorkers < nworkers
+        mycluster.NumWorkers = nworkers;
+        saveProfile(mycluster);
     end
     if matlabpool('size') == 0
         matlabpool('local', nworkers);
@@ -164,12 +164,12 @@ Rz   = bsxfun(@minus, R, Rbar);
 CR   = (Rz * Rz')/size(Rz, 2);
 [V, DR] = eig(CR);
 dr   = diag(DR);
-[dr, sidxs_r] = sort(dr, 'descend');
+[dr, sidx_r] = sort(dr, 'descend');
 dr(dr<eps) = eps;
 Rpca.C = CR;
-Rpca.V = V(:, sidxs_r);
+Rpca.V = V(:, sidx_r);
 Rpca.d = dr;
-Rpca.sortIdxs = 1:N;
+Rpca.sortIdx = 1:N;
 Rpca.mean = Rbar;
 
 Xbar = mean(X, 2);
@@ -177,12 +177,12 @@ Xz   = bsxfun(@minus, X, Xbar);
 CX   = (Xz * Xz')/size(Xz, 2);
 [V, DX] = eig(CX);
 dx   = diag(DX);
-[dx, sidxs_x] = sort(dx, 'descend');
+[dx, sidx_x] = sort(dx, 'descend');
 dx(dx<eps) = eps;
 Xpca.C = CX;
-Xpca.V = V(:, sidxs_x);
+Xpca.V = V(:, sidx_x);
 Xpca.d = dx;
-Xpca.sortIdxs = 1:N;
+Xpca.sortIdx = 1:N;
 Xpca.mean = Xbar;
 
 % % Plot explained variance.
@@ -276,17 +276,17 @@ axis equal;
 %% Find equilibrium/fixed points.
 nconst_input = 2; % Equilibrium/fixed points may depend on constant (contextual) input.
 nfps = 2*(nconditions/2); % Number of expected equilibrium/fixed points (per constant input).
-init_radius = 0.0001; % Radius of the neighborhood of starting_point from which the search starts.
-max_radius = 0.01;
-tolq = 1.0e-6;   % Tolerance on q(x) = 1/2 |F(x)|^2, where dx/dt = F(x) describes the dynamics of the RNN.
+init_radius = 0.0001; % Radius of the neighborhood of the starting_point from which the search starts.
+max_radius  = 0.01;
+tolq   = 1.0e-6; % Tolerance on q(x) = 1/2 |F(x)|^2, where dx/dt = F(x) describes the dynamics of the RNN.
 tolfun = 1.0e-6; % Tolerance on the function value for fminunc.
-tolx = 1.0e-6;   % Tolerance on x for fminunc.
+tolx   = 1.0e-6; % Tolerance on x for fminunc.
 
 for i = 1:nconst_input
     if i == 1
         const_input = [1 0 0 1 zeros(1,2)]'; % Define the constant (contextual) input for the equilibrium/fixed points.
     else
-        const_input = [0 1 0 1 zeros(1,2)]'; % Define the constant (contextual) input for the equilibrium/fixed points.
+        const_input = [0 1 0 1 zeros(1,2)]';
     end
     starting_points = [];
     for j = 1:nconditions
@@ -300,20 +300,20 @@ for i = 1:nconst_input
         'const_input', const_input, 'do_topo_map', false, 'display', 'off', 'tolfun', tolfun, 'tolx', tolx);
 end
 
-tolfp = 1e-1; % Two fps that have a distance larger than this will be classified as different fps.
+tolfp = 1e-1; % Two fps that have a distance larger than this value will be classified as different fps.
 for i = 1:nconst_input
-    idxs_goodfps = find([fp_structs{i}.fpnorm] < inf);
-    ngoodfps = length(idxs_goodfps);
+    idx_goodfps = find([fp_structs{i}.fpnorm] < inf);
+    ngoodfps = length(idx_goodfps);
     if ngoodfps > 0
-        idxs_fps = [idxs_goodfps(1)];
+        idx_fps = [idx_goodfps(1)];
         for j = 2:ngoodfps
-            diff_fp = [fp_structs{i}(idxs_fps).fp] - repmat(fp_structs{i}(idxs_goodfps(j)).fp, 1, length(idxs_fps));
+            diff_fp = [fp_structs{i}(idx_fps).fp] - repmat(fp_structs{i}(idx_goodfps(j)).fp, 1, length(idx_fps));
             if min(sqrt(diag(diff_fp'*diff_fp))) >= tolfp % If the fp is different from all previous ones, count it as a new fp.
-                idxs_fps = [idxs_fps idxs_goodfps(j)];
+                idx_fps = [idx_fps idx_goodfps(j)];
             end
         end
     end
-    fp_structs{i} = fp_structs{i}(idxs_fps);
+    fp_structs{i} = fp_structs{i}(idx_fps);
 end
 
 %% Plot equilibrium/fixed points.
@@ -357,7 +357,7 @@ end
 
 %% Analyze the vector field before and after the switch of the phase-dependent inputs.
 % Calculate the corresponding equilibrium/fixed points and intrinsic dynamics using the methods above.
-fp_rule         = NaN; % This has to be calculated separately (by setting the constant input).
+fp_rule         = ; % This has to be calculated separately (by setting the constant input).
 fp_contingency1 = fp_structs{1}(1);
 fp_saddle       = fp_structs{1}(2);
 fp_contingency2 = fp_structs{1}(3);
@@ -402,7 +402,7 @@ field_y = Vorth(:, 2)'*field;
 field_norm = sqrt(field_x.^2 + field_y.^2);
 field_x = field_x ./ field_norm;
 field_y = field_y ./ field_norm;
-quiver(Vorth(:, 1)'*bsxfun(@minus, points, x_onset), Vorth(:, 2)'*bsxfun(@minus, points, x_onset), ...
+quiver(Vorth(:, 1)'*bsxfun(@minus, points, center), Vorth(:, 2)'*bsxfun(@minus, points, center), ...
     field_x, field_y, .75, 'color', 'k')
 hold on
 
@@ -490,3 +490,51 @@ plot([-11.5 -11.5], [-2.0  3.0], 'r', 'linewidth', lw)
 % axis([-3 1 -2 2])
 
 % axis([-10 -6 -1 3])
+
+%% Calculate the overlap between the unstable manifold and input dimensions.
+eigvecs = fp_saddle.eigvecs;
+vec_m    = eigvecs(:, 1);
+vec_in_1 = n_Wru_v(:, 5);
+vec_in_2 = n_Wru_v(:, 6);
+vec_m    = vec_m / norm(vec_m);
+vec_in_1 = vec_in_1 / norm(vec_in_1);
+vec_in_2 = vec_in_2 / norm(vec_in_2);
+
+angle0 = acosd(dot(vec_in_1, vec_in_2));
+angle0 = min([angle0 180-angle0]);
+angle1 = acosd(dot(vec_m, vec_in_1));
+angle1 = min([angle1 180-angle1]);
+angle2 = acosd(dot(vec_m, vec_in_2));
+angle2 = min([angle2 180-angle2]);
+
+disp(['Angle between two input dimensions: ' num2str(angle0) '.'])
+disp(['Angle between the unstable manifold and input dimension 1: ' num2str(angle1) '.'])
+disp(['Angle between the unstable manifold and input dimension 2: ' num2str(angle2) '.'])
+
+% Randomized permutation test.
+N = 100; % Dimensionality.
+nshuffle = 1e5;
+
+% Assuming that we have two orthogonal N-dimensional vectors v1 = (1, 1, 0,
+% 0,...) and v2 = (1, -1, 0, 0,...). The internal bisector of the angle
+% between v1 and v2 is (1, 0, 0, 0,...).
+vec1 = [1; 1; zeros(N-2, 1)];
+vec2 = [1; -1; zeros(N-2, 1)];
+vec1 = vec1 / norm(vec1);
+
+angles = NaN(nshuffle, 1);
+
+% Randomly choose a third vector, v3, from the orthogonal complementary
+% space of the internal bisector, and calculate the angle between v1 and
+% v3.
+for i = 1:nshuffle
+    vec3 = [0; randn(N-1, 1)]; % Use normal distribution because it is rotationally symmetric.
+    vec3 = vec3 / norm(vec3);
+    angle = acosd(dot(vec1, vec3)); % Due to symmetry, the angle between v2 and v3 is identical to the angle between v1 and v3. 
+    angles(i, 1) = min([angle 180-angle]);
+end
+
+figure;
+hist(angles, 200)
+disp(['The null distribution: ' num2str(mean(angles)) ' ' char(177) ' ' num2str(std(angles)) '.'])
+disp(['The p-value: ' num2str(sum(angles<.5*(angle1+angle2))/nshuffle) '.'])

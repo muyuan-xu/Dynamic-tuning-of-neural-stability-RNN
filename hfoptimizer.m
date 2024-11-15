@@ -1,4 +1,4 @@
-function [theta_opt, objfun] = hfoptimizer(net, conditions_ntrials, inputs_ntrials, targets_ntrials, varargin)
+function [theta_opt, objfun] = hfoptimizer(net, init_conditions_ntrials, inputs_ntrials, targets_ntrials, varargin)
 %% This code is created based on David Sussillo's implementation (https://github.com/sussillo/hfopt-matlab).
 % Initial settings.
 do_parallel = false;
@@ -106,12 +106,12 @@ forward_passes_ntrials = cell(1,ntrials);
 objfuns = cell(1,ntrials);
 if ~do_parallel
     for i = 1:ntrials
-        package = eval_objfun(net,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
+        package = eval_objfun(net,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
         objfuns{i} = package{1};
     end
 else
     parfor i = 1:ntrials
-        package = eval_objfun(net,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
+        package = eval_objfun(net,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
         objfuns{i} = package{1};
     end
 end
@@ -142,12 +142,12 @@ while go
         % Evaluate forward passes.
         if ~do_parallel
             for i = 1:ntrials
-                package = eval_network(net,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i});
+                package = eval_network(net,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i});
                 forward_passes_ntrials{i} = package{1};
             end
         else
             parfor i = 1:ntrials
-                package = eval_network(net,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i});
+                package = eval_network(net,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i});
                 forward_passes_ntrials{i} = package{1};
             end
         end
@@ -156,12 +156,12 @@ while go
         % Evaluate objective functions.
         if ~do_parallel
             for i = 1:ntrials
-                package = eval_objfun(net,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
+                package = eval_objfun(net,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
                 objfuns{i} = package{1};
             end
         else
             parfor i = 1:ntrials
-                package = eval_objfun(net,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
+                package = eval_objfun(net,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
                 objfuns{i} = package{1};
             end
         end
@@ -180,7 +180,7 @@ while go
         else
             random_trial_idxs = 1:ntrials;
         end
-        conditions_nsamples = conditions_ntrials(:,random_trial_idxs);
+        conditions_nsamples = init_conditions_ntrials(:,random_trial_idxs);
         inputs_nsamples = inputs_ntrials(:,random_trial_idxs);
         if ~isempty(targets_ntrials)
             targets_nsamples = targets_ntrials(:,random_trial_idxs);
@@ -195,12 +195,12 @@ while go
         grad = zeros(size(net.theta));
         if ~do_parallel
             for i = 1:ntrials
-                package = eval_gradient(net,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
+                package = eval_gradient(net,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
                 grad = grad + package{1};
             end
         else
             parfor i = 1:ntrials
-                package = eval_gradient(net,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
+                package = eval_gradient(net,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},forward_passes_ntrials{i});
                 grad = grad + package{1};
             end
         end
@@ -243,12 +243,12 @@ while go
     cgnet.theta = cgtheta;
     if ~do_parallel
         for i = 1:ntrials
-            package = eval_objfun(cgnet,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},[]);
+            package = eval_objfun(cgnet,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},[]);
             objfuns{i} = package{1};
         end
     else
         parfor i = 1:ntrials
-            package = eval_objfun(cgnet,conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},[]);
+            package = eval_objfun(cgnet,init_conditions_ntrials{i},inputs_ntrials{i},targets_ntrials{i},[]);
             objfuns{i} = package{1};
         end
     end
@@ -274,12 +274,12 @@ while go
         cgnet.theta = cgtheta;
         if ~do_parallel
             for j = 1:ntrials
-                package = eval_objfun(cgnet,conditions_ntrials{j},inputs_ntrials{j},targets_ntrials{j},[]);
+                package = eval_objfun(cgnet,init_conditions_ntrials{j},inputs_ntrials{j},targets_ntrials{j},[]);
                 objfuns{j} = package{1};
             end
         else
             parfor j = 1:ntrials
-                package = eval_objfun(cgnet,conditions_ntrials{j},inputs_ntrials{j},targets_ntrials{j},[]);
+                package = eval_objfun(cgnet,init_conditions_ntrials{j},inputs_ntrials{j},targets_ntrials{j},[]);
                 objfuns{j} = package{1};
             end
         end
@@ -345,12 +345,12 @@ while go
             
             if ~do_parallel
                 for j = 1:ntrials
-                    package = eval_objfun(lsnet,conditions_ntrials{j},inputs_ntrials{j},targets_ntrials{j},[]);
+                    package = eval_objfun(lsnet,init_conditions_ntrials{j},inputs_ntrials{j},targets_ntrials{j},[]);
                     objfuns{j} = package{1};
                 end
             else
                 parfor j = 1:ntrials
-                    package = eval_objfun(lsnet,conditions_ntrials{j},inputs_ntrials{j},targets_ntrials{j},[]);
+                    package = eval_objfun(lsnet,init_conditions_ntrials{j},inputs_ntrials{j},targets_ntrials{j},[]);
                     objfuns{j} = package{1};
                 end
             end

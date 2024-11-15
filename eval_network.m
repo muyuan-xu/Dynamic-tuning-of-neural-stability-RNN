@@ -1,4 +1,4 @@
-function varargout = eval_network(net, condition, v_u_t, m_target_t)
+function varargout = eval_network(net, init_condition, v_u_t, m_target_t)
 %% Setup.
 % Network structure.
 [n_Wru_v, n_Wrr_n, m_Wzr_n, n_x0_c, n_bx_1, m_bz_1] = unpackRNN(net, net.theta);
@@ -11,7 +11,7 @@ out_transfun = net.layers(3).transfun;
 rec_Doperator = net.layers(2).Doperator;
 
 % The initial state of the RNN.
-n_x0_1 = n_x0_c(:,condition);
+n_x0_1 = n_x0_c(:,init_condition);
 % dt_o_tau.
 dt_o_tau = net.dt / net.tau;
 % The magnitude of noise.

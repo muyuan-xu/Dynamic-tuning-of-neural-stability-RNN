@@ -117,10 +117,10 @@ end
 do_parallel = true;
 nworkers = 7;
 if do_parallel
-    myCluster = parcluster('local');
-    if myCluster.NumWorkers < nworkers
-        myCluster.NumWorkers = nworkers;
-        saveProfile(myCluster);
+    mycluster = parcluster('local');
+    if mycluster.NumWorkers < nworkers
+        mycluster.NumWorkers = nworkers;
+        saveProfile(mycluster);
     end
     if matlabpool('size') == 0
         matlabpool('local', nworkers);
